@@ -123,3 +123,31 @@ type ErrorEvent @entity {
   id: ID!
   description: String!
 }
+
+enum Status {
+  SUCCESS
+  FAILED
+}
+
+type Transaction @entity {
+  id: ID!
+  amount: String
+  asset: String
+  blockNumber: Int!
+  fee: String
+  hash: String! @index
+  originNetwork: String
+  recipient: String @index
+  sender: String @index
+  status: String
+  targetNetwork: String
+  tip: String
+  type: String
+}
+
+type Asset @entity {
+  id: ID!
+  symbol: String!
+  name: String!
+  decimals: Int!
+}
