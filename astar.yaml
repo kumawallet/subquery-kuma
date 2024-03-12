@@ -23,30 +23,23 @@ dataSources:
     mapping:
       file: ./dist/index.js
       handlers:
-        - handler: handleHistoryElement
-          kind: substrate/CallHandler
-        - handler: handleParachainRewarded
+        - handler: handleAssetCreated
           kind: substrate/EventHandler
           filter:
-            module: parachainStaking
-            method: Rewarded
-        - handler: handleTransfer
+            module: assets
+            method: MetadataSet
+        - handler: handleAssetTransferAstar
           kind: substrate/EventHandler
           filter:
             module: balances
             method: Transfer
-        - handler: handleAssetTransfer
+        - handler: handleAssetTransferAstar
           kind: substrate/EventHandler
           filter:
             module: assets
             method: Transferred
-        - handler: handleCurrencyTransfer
+        - handler: handleAssetTransferAstar
           kind: substrate/EventHandler
           filter:
-            module: currencies
-            method: Transferred
-        - handler: handleTokenTransfer
-          kind: substrate/EventHandler
-          filter:
-            module: tokens
-            method: Transfer
+            module: assets
+            method: Burned

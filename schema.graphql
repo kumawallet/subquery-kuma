@@ -129,6 +129,12 @@ enum Status {
   FAILED
 }
 
+enum TransactionType {
+  Transfer
+  Contract
+  Reward
+}
+
 type Transaction @entity {
   id: ID!
   amount: String
