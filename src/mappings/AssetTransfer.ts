@@ -3,12 +3,13 @@ import {
   SubstrateExtrinsic,
   TypedEventRecord,
 } from "@subql/types";
-import { Asset, Status, Transaction } from "../types";
+import { Asset, Status, Transaction, TransactionType } from "../types";
 import { SUBSTRATE_CHAINS } from "../contants/polkadot-chains";
 import {
   calculateFeeAsString,
+  isAcalaEvmEvent,
+  isAcalaExcutedEvent,
   isEvmExecutedEvent,
-  isEvmTransaction,
 } from "./common";
 import { ethereumEncode } from "@polkadot/util-crypto";
 import { AnyTuple, Codec } from "@polkadot/types-codec/types";
@@ -18,6 +19,7 @@ import {
 } from "../utils/polkadot-utils";
 import { evmToAddress } from "@polkadot/util-crypto";
 import { parseBigumber } from "../utils/parse-amounts";
+import { CallBase } from "@polkadot/types/types";
 
 export const handleAssetTransferred = async (
   event: SubstrateEvent,
@@ -67,21 +69,20 @@ const getTransferEventData = async (event: SubstrateEvent, chain: string) => {
 
   let sender = "";
   let asset = SUBSTRATE_CHAINS[chain.toUpperCase()].symbol;
-  let amount = "";
   let recipient = "";
   let hash = "";
   let status = "";
-  let type = "transfer";
-  let targetNetwork = "";
+  let type = TransactionType.Transfer;
+  let targetNetwork = SUBSTRATE_CHAINS[chain.toUpperCase()].name;
   let fee = "";
 
   const isEVM =
-    extrinsic && isEvmTransaction(extrinsic.extrinsic.method as any);
-
-  let _recipient = "";
+    extrinsic && isExtrinsicEVM(extrinsic.extrinsic.method as any, chain);
 
   if (isEVM) {
-    const executedEvent = extrinsic.events.find(isEvmExecutedEvent);
+    const executedEvent = extrinsic.events.find((event) =>
+      getEvmEvent(event as any, chain)
+    );
     if (!executedEvent) {
       return;
     }
@@ -91,12 +92,11 @@ const getTransferEventData = async (event: SubstrateEvent, chain: string) => {
       recipient: evmRecipient,
       hash: _hash,
       success,
-    } = getEvmTransferData(executedEvent);
+    } = getEvmTransferData(executedEvent, chain);
 
     hash = _hash;
     sender = _sender;
-    fee = calculateFeeAsString(extrinsic, sender);
-    _recipient = evmRecipient;
+    recipient = evmRecipient;
     status = success ? Status.SUCCESS : Status.FAILED;
   } else {
     sender = extrinsic.extrinsic.signer.toString();
@@ -104,108 +104,76 @@ const getTransferEventData = async (event: SubstrateEvent, chain: string) => {
     status = extrinsic.success ? Status.SUCCESS : Status.FAILED;
   }
 
+  const tranferData = await getTransferDataFromEvent({
+    event,
+    chainName: chain,
+    isEVM,
+    sender,
+    extrinsic,
+  });
+
+  if (!tranferData) return null;
+
+  const { amount } = tranferData;
   fee = calculateFeeAsString(extrinsic, sender);
 
-  if (isAssetBurnedEvent(event)) {
-    const { assetId, owner, balance } = getAssetBurnedEventData(event);
-
-    const { amount: _amount, symbol } = await parseBalanceWithAsset(
-      assetId,
-      balance
-    );
-
-    asset = symbol;
-    amount = _amount;
-
-    const trasnformedSender = isEVM
-      ? transformAddressToWASM(sender, chain)
-      : sender;
-    if (isTranferFromContract(trasnformedSender, owner)) {
-      recipient = _recipient;
-      type = "contract";
-    } else {
-      const xcmData = handleXcmTransfer(extrinsic);
-      if (xcmData?.recipient && xcmData?.targetNetwork) {
-        recipient = xcmData.recipient;
-        targetNetwork = xcmData.targetNetwork;
-      }
-    }
-  } else if (isAssetTransferredEvent(event)) {
-    const isFirst = isFirstEvent(event, extrinsic, "assets", "Transferred");
-
-    if (!isFirst) return;
-
-    const {
-      assetId: _assetId,
-      from,
-      to,
-      balance,
-    } = getAssetTransferredEventData(event);
-
-    const trasnformedSender = isEVM
-      ? transformAddressToWASM(sender, chain)
-      : sender;
-    if (isTranferFromContract(trasnformedSender, from)) {
-      recipient = _recipient;
-      type = "contract";
-    } else {
-      sender = from;
-      recipient = to;
-
-      const { amount: _amount, symbol } = await parseBalanceWithAsset(
-        _assetId,
-        balance
-      );
-
-      asset = symbol;
-      amount = _amount;
-    }
-  } else if (isBalanceTransferEvent(event)) {
-    const { to, balance } = getBalanceTransferEventData(event);
-
-    amount = balance;
-
-    const eventIsFirst = isFirstEvent(event, extrinsic, "balances", "Transfer");
-
-    if (!eventIsFirst) return;
-
-    const xcmData = handleXcmTransfer(extrinsic);
-    if (xcmData?.recipient && xcmData?.targetNetwork) {
-      recipient = xcmData.recipient;
-      targetNetwork = xcmData.targetNetwork;
-    } else {
-      recipient = to.toString();
-      const recipientIsContract = extrinsic.events.some((event) => {
-        if (
-          event.event.section === "balances" &&
-          event.event.method === "Transfer"
-        ) {
-          const [from] = event.event.data;
-          return from.toString() === to.toString();
-        }
-        return false;
-      });
-
-      if (recipientIsContract) {
-        type = "contract";
-      }
-    }
-  }
-
   return {
-    sender,
-    asset,
+    sender: tranferData.sender || sender,
+    asset: tranferData.asset || asset,
     amount,
-    recipient,
+    recipient: tranferData.recipient || recipient,
     hash,
-    type,
+    type: tranferData.type || type,
     status,
-    targetNetwork,
+    targetNetwork: tranferData.targetNetwork || targetNetwork,
     fee,
   };
 };
 
-const getEvmTransferData = (event: TypedEventRecord<Codec[]>) => {
+interface TransferDataFromEvent {
+  event: SubstrateEvent;
+  chainName: string;
+  isEVM: boolean;
+  sender: string;
+  extrinsic: SubstrateExtrinsic<AnyTuple>;
+}
+
+const getTransferDataFromEvent = (
+  props: TransferDataFromEvent
+): Promise<HandleEventResponse> => {
+  if (isAssetBurnedEvent(props.event)) {
+    return handleBurnedEvent(props);
+  } else if (isAssetTransferredEvent(props.event)) {
+    return handleAssetTransferredEvent(props);
+  } else if (isBalanceTransferEvent(props.event)) {
+    return handleBalanceTransferEvent(props);
+  }
+  // else if (isCurrenciesTransferredEvent(props.event)) {
+  //   return handleCurrenciesTransferredEvent(props);
+  // }
+};
+
+interface HandleEvent {
+  isEVM: boolean;
+  sender: string;
+  chainName: string;
+  extrinsic: SubstrateExtrinsic<AnyTuple>;
+  event: SubstrateEvent;
+}
+
+interface HandleEventResponse {
+  asset: string;
+  amount: string;
+  sender: string;
+  recipient: string;
+  targetNetwork: string;
+  type: string;
+}
+
+const getEvmTransferData = (
+  event: TypedEventRecord<Codec[]>,
+  chaiName: string
+) => {
   const sender = ethereumEncode(event.event.data?.[0]?.toString());
   const recipient = ethereumEncode(event.event.data?.[1]?.toString());
   const hash = event.event.data?.[2]?.toString();
@@ -223,16 +191,209 @@ const isAssetBurnedEvent = (event: SubstrateEvent) => {
   return event.event.section === "assets" && event.event.method === "Burned";
 };
 
+const handleBurnedEvent = async ({
+  event,
+  sender,
+  extrinsic,
+  chainName,
+  isEVM,
+}: HandleEvent): Promise<HandleEventResponse> => {
+  let amount = "";
+  let asset = "";
+  let recipient = "";
+  let type = "";
+  let targetNetwork = "";
+
+  const { assetId, owner, balance } = getAssetBurnedEventData(event);
+
+  const { amount: _amount, symbol } = await parseBalanceWithAsset(
+    assetId,
+    balance
+  );
+
+  asset = symbol;
+  amount = _amount;
+
+  const trasnformedSender = isEVM
+    ? transformAddressToWASM(sender, chainName)
+    : sender;
+  if (isTranferFromContract(trasnformedSender, owner)) {
+    type = TransactionType.Contract;
+  } else {
+    const xcmData = handleXcmTransfer(extrinsic);
+    if (xcmData?.recipient && xcmData?.targetNetwork) {
+      recipient = xcmData.recipient;
+      targetNetwork = xcmData.targetNetwork;
+    }
+  }
+
+  return {
+    amount,
+    asset,
+    sender,
+    recipient,
+    targetNetwork,
+    type,
+  };
+};
+
 const isAssetTransferredEvent = (event: SubstrateEvent) => {
   return (
-    event.event.section === "assets" && event.event.method === "Transferred"
+    ["localAssets", "assets"].includes(event.event.section) &&
+    event.event.method === "Transferred"
   );
+};
+
+const handleAssetTransferredEvent = async ({
+  event,
+  sender,
+  extrinsic,
+  chainName,
+  isEVM,
+}: HandleEvent): Promise<HandleEventResponse> => {
+  let amount = "";
+  let asset = "";
+  let recipient = "";
+  let type = "";
+  let targetNetwork = "";
+
+  const isFirst = isFirstEvent(event, extrinsic, "assets", "Transferred");
+
+  if (!isFirst) return;
+
+  const { assetId, from, to, balance } = getAssetTransferredEventData(event);
+
+  const trasnformedSender = isEVM
+    ? transformAddressToWASM(sender, chainName)
+    : sender;
+  if (isTranferFromContract(trasnformedSender, from)) {
+    type = TransactionType.Contract;
+  } else {
+    sender = from;
+    recipient = to;
+
+    const { amount: _amount, symbol } = await parseBalanceWithAsset(
+      assetId,
+      balance
+    );
+
+    asset = symbol;
+    amount = _amount;
+  }
+
+  return {
+    amount,
+    asset,
+    sender,
+    recipient,
+    targetNetwork,
+    type,
+  };
 };
 
 const isBalanceTransferEvent = (event: SubstrateEvent) => {
   return (
     event.event.section === "balances" && event.event.method === "Transfer"
   );
+};
+
+const handleBalanceTransferEvent = async ({
+  event,
+  sender,
+  extrinsic,
+}: HandleEvent): Promise<HandleEventResponse> => {
+  let amount = "";
+  let asset = "";
+  let recipient = "";
+  let type = "";
+  let targetNetwork = "";
+
+  const { to, balance } = getBalanceTransferEventData(event);
+
+  amount = balance;
+
+  const eventIsFirst = isFirstEvent(event, extrinsic, "balances", "Transfer");
+
+  if (!eventIsFirst) return;
+
+  const xcmData = handleXcmTransfer(extrinsic);
+  if (xcmData?.recipient && xcmData?.targetNetwork) {
+    recipient = xcmData.recipient;
+    targetNetwork = xcmData.targetNetwork;
+  } else {
+    recipient = to.toString();
+    const recipientIsContract = extrinsic.events.some((event) => {
+      if (
+        event.event.section === "balances" &&
+        event.event.method === "Transfer"
+      ) {
+        const [from] = event.event.data;
+        return from.toString() === to.toString();
+      }
+      return false;
+    });
+
+    if (recipientIsContract) {
+      type = TransactionType.Contract;
+    }
+  }
+
+  return {
+    amount,
+    asset,
+    sender,
+    recipient,
+    targetNetwork,
+    type,
+  };
+};
+
+const isTokenTransferredEvent = (event: SubstrateEvent) => {
+  return (
+    event.event.section === "currencies" && event.event.method === "Transfer"
+  );
+};
+
+const handleTokenTransferredEvent = async ({
+  event,
+  sender,
+  extrinsic,
+  chainName,
+  isEVM,
+}: HandleEvent): Promise<HandleEventResponse> => {
+  let asset = "";
+  let type = "";
+  let targetNetwork = "";
+
+  const {
+    currencyId,
+    from,
+    to: recipient,
+    amount,
+  } = event.event.data.toHuman() as {
+    currencyId:
+      | {
+          ForeignAsset: string;
+        }
+      | {
+          Token: string;
+        }
+      | {
+          Erc20: string;
+        };
+    from: string;
+    to: string;
+    amount: string;
+  };
+
+  return {
+    amount,
+    asset,
+    sender,
+    recipient: from,
+    targetNetwork,
+    type,
+  };
 };
 
 const findXTokensEvent = ({ events }: SubstrateExtrinsic<AnyTuple>) => {
@@ -411,4 +572,23 @@ const parseBalanceWithAsset = async (
       symbol: assetId,
     };
   }
+};
+
+const isExtrinsicEVM = (
+  extrinsicMethod: CallBase<AnyTuple>,
+  chainName: string
+) => {
+  if (chainName === SUBSTRATE_CHAINS["ACALA"].name) {
+    return isAcalaEvmEvent(extrinsicMethod as any);
+  }
+
+  return isEvmExecutedEvent(extrinsicMethod as any);
+};
+
+const getEvmEvent = (event: SubstrateEvent, chainName: string) => {
+  if (chainName === SUBSTRATE_CHAINS["ACALA"].name) {
+    return isAcalaExcutedEvent(event);
+  }
+
+  return isEvmExecutedEvent(event);
 };

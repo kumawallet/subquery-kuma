@@ -24,10 +24,11 @@ dataSources:
     mapping:
       file: ./dist/index.js
       handlers:
-        - handler: handleHistoryElement
-          kind: substrate/CallHandler
+        - handler: handleAssetTransferPolkadot
+          kind: substrate/EventHandler
           filter:
-            isSigned: true
+            module: balances
+            method: Transfer
         - handler: handleReward
           kind: substrate/EventHandler
           filter:
@@ -63,11 +64,6 @@ dataSources:
           filter:
             module: nominationPools
             method: UnbondingPoolSlashed
-        - handler: handleTransfer
-          kind: substrate/EventHandler
-          filter:
-            module: balances
-            method: Transfer
         - handler: handleNewEra
           kind: substrate/EventHandler
           filter:
