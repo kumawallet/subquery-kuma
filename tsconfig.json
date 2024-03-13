@@ -9,13 +9,15 @@
     "module": "commonjs",
     "outDir": "dist",
     "rootDir": ".",
-    "target": "es2020",
+    "target": "es2017",
     "skipLibCheck": true,
     "strictNullChecks": false
   },
   "include": [
     "src/**/*",
+    "node_modules/@subql/types-core/dist/global.d.ts",
     "node_modules/@subql/types/dist/global.d.ts",
+    "node_modules/@subql/types-ethereum/dist/global.d.ts",
     "./chaintypes.ts"
   ]
 }
