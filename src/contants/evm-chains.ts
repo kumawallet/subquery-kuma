@@ -12,7 +12,7 @@ export const EVM_CHAINS: Chain = {
     decimals: 18,
   },
   BNB: {
-    name: "Binance Smart Chain",
+    name: "BNB",
     symbol: "BNB",
     decimals: 18,
   },

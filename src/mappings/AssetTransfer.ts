@@ -7,8 +7,8 @@ import { Asset, Status, Transaction, TransactionType } from "../types";
 import { SUBSTRATE_CHAINS } from "../contants/polkadot-chains";
 import {
   calculateFeeAsString,
-  isAcalaEvmEvent,
-  isAcalaExcutedEvent,
+  // isAcalaEvmEvent,
+  // isAcalaExcutedEvent,
   isEvmExecutedEvent,
 } from "./common";
 import { ethereumEncode } from "@polkadot/util-crypto";
@@ -28,7 +28,7 @@ export const handleAssetTransferred = async (
   const txInfo = await getTransferEventData(event, chain);
 
   if (txInfo) {
-    const blockNumber = event.extrinsic.block.block.header.number.toNumber();
+    const blockNumber = event.extrinsic!.block.block.header.number.toNumber();
 
     const {
       amount,
@@ -140,7 +140,7 @@ interface TransferDataFromEvent {
 
 const getTransferDataFromEvent = (
   props: TransferDataFromEvent
-): Promise<HandleEventResponse> => {
+): Promise<HandleEventResponse | undefined> | undefined => {
   if (isAssetBurnedEvent(props.event)) {
     return handleBurnedEvent(props);
   } else if (isAssetTransferredEvent(props.event)) {
@@ -250,7 +250,7 @@ const handleAssetTransferredEvent = async ({
   extrinsic,
   chainName,
   isEVM,
-}: HandleEvent): Promise<HandleEventResponse> => {
+}: HandleEvent): Promise<HandleEventResponse | undefined> => {
   let amount = "";
   let asset = "";
   let recipient = "";
@@ -301,7 +301,7 @@ const handleBalanceTransferEvent = async ({
   event,
   sender,
   extrinsic,
-}: HandleEvent): Promise<HandleEventResponse> => {
+}: HandleEvent): Promise<HandleEventResponse | undefined> => {
   let amount = "";
   let asset = "";
   let recipient = "";
@@ -406,19 +406,21 @@ const getPolkadotXcmData = (extrinsic: SubstrateExtrinsic<AnyTuple>) => {
 
 const handleXcmTransfer = (
   extrinsic: SubstrateExtrinsic<AnyTuple>
-): {
-  recipient: string;
-  targetNetwork: string;
-} => {
+):
+  | {
+      recipient: string;
+      targetNetwork: string;
+    }
+  | undefined => {
   if (isXTokensXCM(extrinsic)) {
     const xTokensEvent = findXTokensEvent(extrinsic);
-    return getXTokensData(xTokensEvent);
+    return getXTokensData(xTokensEvent as any);
   } else if (isXcmPalletXCM(extrinsic) || isPolkadotXCM(extrinsic)) {
     const xcmData = getPolkadotXcmData(extrinsic);
     return handleXcmPalletTargetAddress(xcmData);
   }
 
-  return null;
+  return;
 };
 
 const isXTokensXCM = ({ events }: SubstrateExtrinsic<AnyTuple>) => {
@@ -578,17 +580,9 @@ const isExtrinsicEVM = (
   extrinsicMethod: CallBase<AnyTuple>,
   chainName: string
 ) => {
-  if (chainName === SUBSTRATE_CHAINS["ACALA"].name) {
-    return isAcalaEvmEvent(extrinsicMethod as any);
-  }
-
   return isEvmExecutedEvent(extrinsicMethod as any);
 };
 
 const getEvmEvent = (event: SubstrateEvent, chainName: string) => {
-  if (chainName === SUBSTRATE_CHAINS["ACALA"].name) {
-    return isAcalaExcutedEvent(event);
-  }
-
   return isEvmExecutedEvent(event);
 };

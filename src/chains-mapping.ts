@@ -7,10 +7,6 @@ export const handleAssetTransferPolkadot = async (event: SubstrateEvent) => {
   handleAssetTransferred(event, SUBSTRATE_CHAINS["POLKADOT"].name);
 };
 
-export const handleRewardPolkadot = async (event: SubstrateEvent) => {
-  handleReward(event as any, SUBSTRATE_CHAINS["POLKADOT"].name);
-};
-
 export const handleAssetTransferAstar = async (event: SubstrateEvent) => {
   handleAssetTransferred(event, SUBSTRATE_CHAINS["ASTAR"].name);
 };
