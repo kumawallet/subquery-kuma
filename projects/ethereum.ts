@@ -18,7 +18,7 @@ const project: EthereumProject = {
   dataSources: [
     {
       kind: EthereumDatasourceKind.Runtime,
-      startBlock: 1,
+      startBlock: 46147, // first transaction
       options: {
         abi: "erc20",
       },

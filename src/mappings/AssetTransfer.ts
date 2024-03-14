@@ -7,9 +7,8 @@ import { Asset, Status, Transaction, TransactionType } from "../types";
 import { SUBSTRATE_CHAINS } from "../contants/polkadot-chains";
 import {
   calculateFeeAsString,
-  // isAcalaEvmEvent,
-  // isAcalaExcutedEvent,
   isEvmExecutedEvent,
+  isEvmTransaction,
 } from "./common";
 import { ethereumEncode } from "@polkadot/util-crypto";
 import { AnyTuple, Codec } from "@polkadot/types-codec/types";
@@ -19,7 +18,6 @@ import {
 } from "../utils/polkadot-utils";
 import { evmToAddress } from "@polkadot/util-crypto";
 import { parseBigumber } from "../utils/parse-amounts";
-import { CallBase } from "@polkadot/types/types";
 
 export const handleAssetTransferred = async (
   event: SubstrateEvent,
@@ -77,7 +75,7 @@ const getTransferEventData = async (event: SubstrateEvent, chain: string) => {
   let fee = "";
 
   const isEVM =
-    extrinsic && isExtrinsicEVM(extrinsic.extrinsic.method as any, chain);
+    extrinsic?.success && isEvmTransaction(extrinsic.extrinsic.method as any);
 
   if (isEVM) {
     const executedEvent = extrinsic.events.find((event) =>
@@ -348,53 +346,53 @@ const handleBalanceTransferEvent = async ({
   };
 };
 
-const isTokenTransferredEvent = (event: SubstrateEvent) => {
-  return (
-    event.event.section === "currencies" && event.event.method === "Transfer"
-  );
-};
+// const isTokenTransferredEvent = (event: SubstrateEvent) => {
+//   return (
+//     event.event.section === "currencies" && event.event.method === "Transfer"
+//   );
+// };
 
-const handleTokenTransferredEvent = async ({
-  event,
-  sender,
-  extrinsic,
-  chainName,
-  isEVM,
-}: HandleEvent): Promise<HandleEventResponse> => {
-  let asset = "";
-  let type = "";
-  let targetNetwork = "";
+// const handleTokenTransferredEvent = async ({
+//   event,
+//   sender,
+//   extrinsic,
+//   chainName,
+//   isEVM,
+// }: HandleEvent): Promise<HandleEventResponse> => {
+//   let asset = "";
+//   let type = "";
+//   let targetNetwork = "";
 
-  const {
-    currencyId,
-    from,
-    to: recipient,
-    amount,
-  } = event.event.data.toHuman() as {
-    currencyId:
-      | {
-          ForeignAsset: string;
-        }
-      | {
-          Token: string;
-        }
-      | {
-          Erc20: string;
-        };
-    from: string;
-    to: string;
-    amount: string;
-  };
+//   const {
+//     currencyId,
+//     from,
+//     to: recipient,
+//     amount,
+//   } = event.event.data.toHuman() as {
+//     currencyId:
+//       | {
+//           ForeignAsset: string;
+//         }
+//       | {
+//           Token: string;
+//         }
+//       | {
+//           Erc20: string;
+//         };
+//     from: string;
+//     to: string;
+//     amount: string;
+//   };
 
-  return {
-    amount,
-    asset,
-    sender,
-    recipient: from,
-    targetNetwork,
-    type,
-  };
-};
+//   return {
+//     amount,
+//     asset,
+//     sender,
+//     recipient: from,
+//     targetNetwork,
+//     type,
+//   };
+// };
 
 const findXTokensEvent = ({ events }: SubstrateExtrinsic<AnyTuple>) => {
   return events.find((event) => event.event.section === "xTokens" && event);
@@ -574,13 +572,6 @@ const parseBalanceWithAsset = async (
       symbol: assetId,
     };
   }
-};
-
-const isExtrinsicEVM = (
-  extrinsicMethod: CallBase<AnyTuple>,
-  chainName: string
-) => {
-  return isEvmExecutedEvent(extrinsicMethod as any);
 };
 
 const getEvmEvent = (event: SubstrateEvent, chainName: string) => {

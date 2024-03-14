@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "./node_modules/.bin/subql build",
-    "start:docker": "docker-compose pull && docker-compose up --remove-orphans",
+    "start:docker:evm": "docker-compose -f docker-compose.evm.yml pull && docker-compose -f docker-compose.evm.yml up --remove-orphans",
+    "start:docker:substrate": "docker-compose -f docker-compose.substrate.yml pull && docker-compose -f docker-compose.substrate.yml up --remove-orphans",
     "codegen": "./node_modules/.bin/subql codegen",
     "validate": "./node_modules/.bin/subql validate"
   },

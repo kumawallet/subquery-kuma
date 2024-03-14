@@ -74,13 +74,19 @@ export const erc20DataSources = (
       file: "./dist/index.js",
       handlers: [
         {
-          kind: EthereumHandlerKind.Event,
+          kind: EthereumHandlerKind.Call,
           handler: `handleErc20Transfer${chainName}`,
           filter: {
-            topics: [
-              "Transfer(address indexed from, address indexed to, uint256 amount)",
-            ],
+            function: "transfer(address to, uint256 value)",
           },
+          // kind: EthereumHandlerKind.Event,
+          // handler: `handleErc20Transfer${chainName}`,
+          // filter: {
+
+          //   topics: [
+          //     "Transfer(address indexed from, address indexed to, uint256 amount)",
+          //   ],
+          // },
         },
       ],
     },

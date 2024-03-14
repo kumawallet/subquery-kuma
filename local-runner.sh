@@ -18,7 +18,18 @@ sudo rm -rf dist/
 # If any command bellow will fail - script will stop
 set -e
 
-yarn
-yarn codegen
-yarn build
-yarn start:docker
+TYPE=$2
+
+if [ "$TYPE" == "evm" ]; then
+    echo "EVM"
+    yarn
+    yarn codegen
+    yarn build
+    yarn start:docker:evm
+else
+    echo "Substrate"
+    yarn
+    yarn codegen
+    yarn build
+    yarn start:docker:substrate
+fi

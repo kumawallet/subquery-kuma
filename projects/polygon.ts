@@ -22,7 +22,7 @@ const project: EthereumProject = {
       options: {
         abi: "erc20",
       },
-      assets: new Map([["erc20", { file: "../abis/erc20.abi.json" }]]),
+      assets: new Map([["erc20", { file: "./abis/erc20.abi.json" }]]),
       mapping: {
         file: "./dist/index.js",
         handlers: [
