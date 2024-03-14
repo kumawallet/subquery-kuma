@@ -16,7 +16,7 @@ export const handleErc20Transfer = async (
 ): Promise<void> => {
   if (tx.to && tx.from) {
     const nativeAssetDecimals = EVM_CHAINS[chainName.toUpperCase()].decimals;
-    const asset = ERC20[chainName][tx.to];
+    const asset = ERC20[chainName][tx.to.toLowerCase()];
     const amount = parseBigumber(tx.args[1]?.toString(), asset?.decimals || 1);
     const { gasUsed, effectiveGasPrice, status, type } = await tx.receipt();
 
@@ -40,6 +40,15 @@ export const handleErc20Transfer = async (
       status: getStatus(type, status),
       tip: "",
     });
+
+    // logger.info(`ERC20 transaction ${JSON.stringify(transaction, null, 2)}`);
+    // logger.info(
+    //   JSON.stringify({
+    //     status,
+    //     type,
+    //     to: tx.to,
+    //   })
+    // );
 
     await transaction.save();
   }
@@ -79,6 +88,13 @@ export const handleNativeTransfer = async (
       tip: "",
     });
 
+    // logger.info(`native transaction ${JSON.stringify(transaction, null, 2)}`);
+    // logger.info(
+    //   JSON.stringify({
+    //     status,
+    //     type,
+    //   })
+    // );
     await transaction.save();
   }
 };
