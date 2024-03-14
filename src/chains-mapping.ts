@@ -36,3 +36,19 @@ export const handleNativeTransferEthereum = async (tx: EthereumTransaction) => {
 export const handleErc20TransferEthereum = async (tx: EthereumTransaction) => {
   handleErc20Transfer(tx, EVM_CHAINS["ETHEREUM"].name);
 };
+
+export const handleNativeTransferPolygon = async (tx: EthereumTransaction) => {
+  handleNativeTransfer(tx, EVM_CHAINS["POLYGON"].name);
+};
+
+export const handleErc20TransferPolygon = async (tx: EthereumTransaction) => {
+  handleErc20Transfer(tx, EVM_CHAINS["POLYGON"].name);
+};
+
+export const handleNativeTransferBNB = async (tx: EthereumTransaction) => {
+  handleNativeTransfer(tx, EVM_CHAINS["BNB"].name);
+};
+
+export const handleErc20TransferBNB = async (tx: EthereumTransaction) => {
+  handleErc20Transfer(tx, EVM_CHAINS["BNB"].name);
+};
