@@ -418,10 +418,12 @@ async function handleParachainRewardForTxHistory(
   const sender = account.toString();
   const recipient = account.toString();
   const type = TransactionType.Reward;
+  const blockTimestamp = timestamp(rewardEvent.block);
 
   const tx = Transaction.create({
     id: eventId(rewardEvent),
     blockNumber,
+    timestamp: blockTimestamp,
     hash,
     fee,
     originNetwork,

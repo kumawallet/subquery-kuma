@@ -148,6 +148,7 @@ type Transaction @entity {
   status: String
   targetNetwork: String
   tip: String
+  timestamp: BigInt! @index
   type: String
 }
 

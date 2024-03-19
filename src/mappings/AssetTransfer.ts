@@ -9,6 +9,7 @@ import {
   calculateFeeAsString,
   isEvmExecutedEvent,
   isEvmTransaction,
+  timestamp,
 } from "./common";
 import { ethereumEncode } from "@polkadot/util-crypto";
 import { AnyTuple, Codec } from "@polkadot/types-codec/types";
@@ -27,6 +28,7 @@ export const handleAssetTransferred = async (
 
   if (txInfo) {
     const blockNumber = event.extrinsic!.block.block.header.number.toNumber();
+    const blockTimestamp = timestamp(event.extrinsic.block);
 
     const {
       amount,
@@ -53,6 +55,7 @@ export const handleAssetTransferred = async (
       blockNumber,
       hash,
       originNetwork: chain,
+      timestamp: blockTimestamp,
       tip: "0",
     });
 

@@ -28,6 +28,7 @@ export const handleErc20Transfer = async (
     const transaction = Transaction.create({
       id: tx.hash,
       blockNumber: Number(BigInt(tx.blockNumber)),
+      timestamp: tx.blockTimestamp,
       hash: tx.hash,
       originNetwork: chainName,
       targetNetwork: chainName,
@@ -75,6 +76,7 @@ export const handleNativeTransfer = async (
     const transaction = Transaction.create({
       id: tx.hash,
       blockNumber: Number(BigInt(tx.blockNumber)),
+      timestamp: tx.blockTimestamp,
       hash: tx.hash,
       originNetwork: chainName,
       targetNetwork: chainName,
