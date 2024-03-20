@@ -10,7 +10,12 @@ const project: SubstrateProject = {
   network: {
     chainId:
       "0x9eb76c5184c4ab8679d2d5d819fdf90b9c001403e9e17da2e14b6d8aec4029c6",
-    endpoint: ["wss://rpc.astar.network"],
+    endpoint: [
+      "wss://astar-rpc.dwellir.com",
+      "wss://1rpc.io/astr",
+      "wss://rpc.astar.network",
+      "wss://astar.public.curie.radiumblock.co/ws",
+    ],
   },
   dataSources: [
     {

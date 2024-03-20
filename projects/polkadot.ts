@@ -10,12 +10,22 @@ const project: SubstrateProject = {
   network: {
     chainId:
       "0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3",
-    endpoint: ["wss://polkadot.api.onfinality.io/public-ws"],
+    endpoint: [
+      "wss://apps-rpc.polkadot.io",
+      "wss://polkadot-rpc.dwellir.com",
+      "wss://polkadot-rpc-tn.dwellir.com",
+      "wss://rpc.ibp.network/polkadot",
+      "wss://rpc.dotters.network/polkadot",
+      "wss://1rpc.io/dot",
+      "wss://rpc-polkadot.luckyfriday.io",
+      "wss://polkadot.public.curie.radiumblock.co/ws",
+      "wss://dot-rpc.stakeworld.io",
+    ],
   },
   dataSources: [
     {
       kind: SubstrateDatasourceKind.Runtime,
-      startBlock: 1,
+      startBlock: 19810396,
       mapping: {
         file: "./dist/index.js",
         handlers: [
@@ -29,66 +39,10 @@ const project: SubstrateProject = {
           },
           {
             kind: SubstrateHandlerKind.Event,
-            handler: "handleReward",
-            filter: {
-              module: "staking",
-              method: "Reward",
-            },
-          },
-          {
-            kind: SubstrateHandlerKind.Event,
-            handler: "handleRewarded",
+            handler: "handleRewardedPolkadot",
             filter: {
               module: "staking",
               method: "Rewarded",
-            },
-          },
-          {
-            kind: SubstrateHandlerKind.Event,
-            handler: "handlePoolReward",
-            filter: {
-              module: "nominationPools",
-              method: "PaidOut",
-            },
-          },
-          {
-            kind: SubstrateHandlerKind.Event,
-            handler: "handleSlash",
-            filter: {
-              module: "staking",
-              method: "Slash",
-            },
-          },
-          {
-            kind: SubstrateHandlerKind.Event,
-            handler: "handleSlashed",
-            filter: {
-              module: "staking",
-              method: "Slashed",
-            },
-          },
-          {
-            kind: SubstrateHandlerKind.Event,
-            handler: "handlePoolBondedSlash",
-            filter: {
-              module: "nominationPools",
-              method: "PoolSlashed",
-            },
-          },
-          {
-            kind: SubstrateHandlerKind.Event,
-            handler: "handlePoolUnbondingSlash",
-            filter: {
-              module: "nominationPools",
-              method: "UnbondingPoolSlashed",
-            },
-          },
-          {
-            kind: SubstrateHandlerKind.Event,
-            handler: "handleNewEra",
-            filter: {
-              module: "staking",
-              method: "StakingElection",
             },
           },
           {
@@ -97,6 +51,14 @@ const project: SubstrateProject = {
             filter: {
               module: "staking",
               method: "StakersElected",
+            },
+          },
+          {
+            kind: SubstrateHandlerKind.Event,
+            handler: "handlePoolRewardPolkadot",
+            filter: {
+              module: "nominationPools",
+              method: "PaidOut",
             },
           },
         ],
