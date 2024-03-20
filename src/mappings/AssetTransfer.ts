@@ -55,11 +55,12 @@ export const handleAssetTransferred = async (
       blockNumber,
       hash,
       originNetwork: chain,
-      timestamp: blockTimestamp,
+      timestamp: Number(blockTimestamp),
       tip: "0",
     });
 
-    logger.info(`tx: ${JSON.stringify(tx, null, 2)}`);
+    // logger.info(`tx saved: ${tx.id}`);
+    tx.save();
   }
 };
 
@@ -98,11 +99,11 @@ const getTransferEventData = async (event: SubstrateEvent, chain: string) => {
     hash = _hash;
     sender = _sender;
     recipient = evmRecipient;
-    status = success ? Status.SUCCESS : Status.FAILED;
+    status = success ? Status.success : Status.fail;
   } else {
     sender = extrinsic.extrinsic.signer.toString();
     hash = extrinsic.extrinsic.hash.toString();
-    status = extrinsic.success ? Status.SUCCESS : Status.FAILED;
+    status = extrinsic.success ? Status.success : Status.fail;
   }
 
   const tranferData = await getTransferDataFromEvent({
@@ -302,6 +303,7 @@ const handleBalanceTransferEvent = async ({
   event,
   sender,
   extrinsic,
+  chainName,
 }: HandleEvent): Promise<HandleEventResponse | undefined> => {
   let amount = "";
   let asset = "";
@@ -311,7 +313,10 @@ const handleBalanceTransferEvent = async ({
 
   const { to, balance } = getBalanceTransferEventData(event);
 
-  amount = balance;
+  amount = parseBigumber(
+    balance,
+    SUBSTRATE_CHAINS[chainName.toUpperCase()].decimals
+  );
 
   const eventIsFirst = isFirstEvent(event, extrinsic, "balances", "Transfer");
 

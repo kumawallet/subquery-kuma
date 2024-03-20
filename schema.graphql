@@ -125,14 +125,15 @@ type ErrorEvent @entity {
 }
 
 enum Status {
-  SUCCESS
-  FAILED
+  success
+  fail
 }
 
 enum TransactionType {
   Transfer
   Contract
   Reward
+  RewardClaimed
 }
 
 type Transaction @entity {
@@ -148,7 +149,7 @@ type Transaction @entity {
   status: String
   targetNetwork: String
   tip: String
-  timestamp: BigInt! @index
+  timestamp: Int! @index
   type: String
 }
 

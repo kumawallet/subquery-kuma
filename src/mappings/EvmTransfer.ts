@@ -5,9 +5,9 @@ import { ERC20 } from "../contants/evm-erc20";
 import { parseBigumber } from "../utils/parse-amounts";
 
 const getStatus = (type: string, status: boolean) => {
-  if (Number(type) === 0) return Status.SUCCESS;
+  if (Number(type) === 0) return Status.success;
 
-  return status ? Status.SUCCESS : Status.FAILED;
+  return status ? Status.success : Status.fail;
 };
 
 export const handleErc20Transfer = async (
@@ -28,7 +28,7 @@ export const handleErc20Transfer = async (
     const transaction = Transaction.create({
       id: tx.hash,
       blockNumber: Number(BigInt(tx.blockNumber)),
-      timestamp: tx.blockTimestamp,
+      timestamp: Number(tx.blockTimestamp),
       hash: tx.hash,
       originNetwork: chainName,
       targetNetwork: chainName,
@@ -76,7 +76,7 @@ export const handleNativeTransfer = async (
     const transaction = Transaction.create({
       id: tx.hash,
       blockNumber: Number(BigInt(tx.blockNumber)),
-      timestamp: tx.blockTimestamp,
+      timestamp: Number(tx.blockTimestamp),
       hash: tx.hash,
       originNetwork: chainName,
       targetNetwork: chainName,
