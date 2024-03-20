@@ -66,15 +66,17 @@ function extractArgsFromPayoutValidator(
 }
 
 export async function handleRewarded(
-  rewardEvent: SubstrateEvent<[accountId: Codec, reward: INumber]>
+  rewardEvent: SubstrateEvent<[accountId: Codec, reward: INumber]>,
+  chainName: string
 ): Promise<void> {
-  await handleReward(rewardEvent);
+  await handleReward(rewardEvent, chainName);
 }
 
 export async function handleReward(
-  rewardEvent: SubstrateEvent<[accountId: Codec, reward: INumber]>
+  rewardEvent: SubstrateEvent<[accountId: Codec, reward: INumber]>,
+  chainName: string
 ): Promise<void> {
-  await handleRewardForTxHistory(rewardEvent);
+  await handleRewardForTxHistory(rewardEvent, chainName);
   let accumulatedReward = await updateAccumulatedReward(rewardEvent, true);
   await updateAccountRewards(
     rewardEvent,
@@ -84,9 +86,10 @@ export async function handleReward(
 }
 
 async function handleRewardForTxHistory(
-  rewardEvent: SubstrateEvent
+  rewardEvent: SubstrateEvent,
+  chainName: string
 ): Promise<void> {
-  let element = await HistoryElement.get(eventId(rewardEvent));
+  let element = await Transaction.get(eventId(rewardEvent));
 
   if (element !== undefined) {
     // already processed reward previously
@@ -103,10 +106,6 @@ async function handleRewardForTxHistory(
   if (payoutCallsArgs.length == 0) {
     return;
   }
-
-  const payoutValidators = payoutCallsArgs.map(([validator]) => validator);
-
-  const initialCallIndex = -1;
 
   var accountsMapping: { [address: string]: string } = {};
 
@@ -151,39 +150,7 @@ async function handleRewardForTxHistory(
     rewardEvent.event.method,
     rewardEvent.event.section,
     accountsMapping,
-    initialCallIndex,
-    (currentCallIndex, eventAccount) => {
-      if (payoutValidators.length > currentCallIndex + 1) {
-        const index = payoutValidators.indexOf(eventAccount);
-        return index !== -1 && index > currentCallIndex
-          ? index
-          : currentCallIndex;
-      } else {
-        return currentCallIndex;
-      }
-    },
-    (currentCallIndex, eventIdx, stash, amount) => {
-      if (currentCallIndex == -1) {
-        return {
-          eventIdx: eventIdx,
-          amount: amount,
-          isReward: true,
-          stash: stash,
-          validator: "",
-          era: -1,
-        };
-      } else {
-        const [validator, era] = payoutCallsArgs[currentCallIndex];
-        return {
-          eventIdx: eventIdx,
-          amount: amount,
-          isReward: true,
-          stash: stash,
-          validator: validator,
-          era: era,
-        };
-      }
-    }
+    chainName
   );
 }
 
@@ -214,15 +181,17 @@ function determinePayoutCallsArgs(
 }
 
 export async function handleSlashed(
-  slashEvent: SubstrateEvent<[accountId: Codec, slash: INumber]>
+  slashEvent: SubstrateEvent<[accountId: Codec, slash: INumber]>,
+  chainName: string
 ): Promise<void> {
-  await handleSlash(slashEvent);
+  await handleSlash(slashEvent, chainName);
 }
 
 export async function handleSlash(
-  slashEvent: SubstrateEvent<[accountId: Codec, slash: INumber]>
+  slashEvent: SubstrateEvent<[accountId: Codec, slash: INumber]>,
+  chainName: string
 ): Promise<void> {
-  await handleSlashForTxHistory(slashEvent);
+  await handleSlashForTxHistory(slashEvent, chainName);
   let accumulatedReward = await updateAccumulatedReward(slashEvent, false);
   await updateAccountRewards(
     slashEvent,
@@ -244,9 +213,10 @@ async function getValidators(era: number): Promise<Set<string>> {
 }
 
 async function handleSlashForTxHistory(
-  slashEvent: SubstrateEvent
+  slashEvent: SubstrateEvent,
+  chainName: string
 ): Promise<void> {
-  let element = await HistoryElement.get(eventId(slashEvent));
+  let element = await Transaction.get(eventId(slashEvent));
 
   if (element !== undefined) {
     // already processed reward previously
@@ -268,28 +238,13 @@ async function handleSlashForTxHistory(
     validatorsSet = await getValidators(slashEra);
   }
 
-  const initialValidator = null;
-
   await buildRewardEvents(
     slashEvent.block,
     slashEvent.extrinsic,
     slashEvent.event.method,
     slashEvent.event.section,
     {},
-    initialValidator,
-    (currentValidator, eventAccount) => {
-      return validatorsSet.has(eventAccount) ? eventAccount : currentValidator;
-    },
-    (validator, eventIdx, stash, amount) => {
-      return {
-        eventIdx: eventIdx,
-        amount: amount,
-        isReward: false,
-        stash: stash,
-        validator: validator,
-        era: slashEra,
-      };
-    }
+    chainName
   );
 }
 
@@ -299,21 +254,14 @@ async function buildRewardEvents<A>(
   eventMethod: String,
   eventSection: String,
   accountsMapping: { [address: string]: string },
-  initialInnerAccumulator: A,
-  produceNewAccumulator: (currentAccumulator: A, eventAccount: string) => A,
-  produceReward: (
-    currentAccumulator: A,
-    eventIdx: number,
-    stash: string,
-    amount: string
-  ) => Reward
+  chainName: string
 ) {
   let blockNumber = block.block.header.number.toString();
   let blockTimestamp = timestamp(block);
 
-  const [, savingPromises] = block.events.reduce<[A, Promise<void>[]]>(
+  const [savingPromises] = block.events.reduce<[Promise<void>[]]>(
     (accumulator, eventRecord, eventIndex) => {
-      let [innerAccumulator, currentPromises] = accumulator;
+      let [currentPromises] = accumulator;
 
       if (
         !(
@@ -327,11 +275,6 @@ async function buildRewardEvents<A>(
         eventRecordToSubstrateEvent(eventRecord)
       );
 
-      const newAccumulator = produceNewAccumulator(
-        innerAccumulator,
-        account.toString()
-      );
-
       const eventId = eventIdFromBlockAndIdx(
         blockNumber,
         eventIndex.toString()
@@ -340,32 +283,35 @@ async function buildRewardEvents<A>(
       const accountAddress = account.toString();
       const destinationAddress = accountsMapping[accountAddress];
 
-      const element = new HistoryElement(
-        eventId,
-        block.block.header.number.toNumber(),
-        blockTimestamp,
-        destinationAddress != undefined ? destinationAddress : accountAddress
-      );
+      const asset = SUBSTRATE_CHAINS[chainName.toUpperCase()].symbol;
+      const decimals = SUBSTRATE_CHAINS[chainName.toUpperCase()].decimals;
 
-      if (extrinsic !== undefined) {
-        element.extrinsicHash = extrinsic.extrinsic.hash.toString();
-        element.extrinsicIdx = extrinsic.idx;
-      }
-      element.reward = produceReward(
-        newAccumulator,
-        eventIndex,
-        accountAddress,
-        amount.toString()
-      );
+      const tx = Transaction.create({
+        id: eventId,
+        blockNumber: Number(blockNumber),
+        hash: block.block.header.hash.toString(),
+        timestamp: Number(blockTimestamp),
+        sender: accountAddress,
+        recipient: destinationAddress != undefined ? destinationAddress : "",
+        type: TransactionType.Reward,
+        amount: parseBigumber(amount.toString(), decimals),
+        asset,
+        status: Status.success,
+        fee: "",
+        originNetwork: chainName,
+        targetNetwork: chainName,
+        tip: "",
+      });
 
-      currentPromises.push(element.save());
+      currentPromises.push(tx.save());
 
-      return [newAccumulator, currentPromises];
+      return [currentPromises];
     },
-    [initialInnerAccumulator, []]
+    [[]]
   );
 
   await Promise.allSettled(savingPromises);
+  logger.info("saves rewards");
 }
 
 async function updateAccumulatedReward(
@@ -423,7 +369,7 @@ async function handleParachainRewardForTxHistory(
   const tx = Transaction.create({
     id: eventId(rewardEvent),
     blockNumber,
-    timestamp: blockTimestamp,
+    timestamp: Number(blockTimestamp),
     hash,
     fee,
     originNetwork,
@@ -433,10 +379,10 @@ async function handleParachainRewardForTxHistory(
     type,
     amount: parseBigumber(amount.toString(), decimals),
     asset: asset,
-    status: Status.SUCCESS,
+    status: Status.success,
   });
 
-  logger.info(`Saving ${JSON.stringify(tx, null, 2)}`);
+  tx.save();
 }
 
 export async function handleParachainRewarded(
