@@ -311,7 +311,7 @@ async function buildRewardEvents<A>(
   );
 
   await Promise.allSettled(savingPromises);
-  logger.info("saves rewards");
+  // logger.info("saves rewards");
 }
 
 async function updateAccumulatedReward(
