@@ -17,7 +17,7 @@ services:
 
   subquery-node:
     container_name: "node-${PROJECT_PATH}"
-    image: onfinality/subql-node:v3.9.1
+    image: onfinality/subql-node:v3.9.3
     depends_on:
       postgres:
         condition: service_healthy
@@ -38,7 +38,7 @@ services:
 
   graphql-engine:
     container_name: "query-${PROJECT_PATH}"
-    image: subquerynetwork/subql-query:latest
+    image: onfinality/subql-query:v2.7.0
     ports:
       - 3000:3000
     depends_on:

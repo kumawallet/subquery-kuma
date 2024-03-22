@@ -89,12 +89,12 @@ async function handleRewardForTxHistory(
   rewardEvent: SubstrateEvent,
   chainName: string
 ): Promise<void> {
-  let element = await Transaction.get(eventId(rewardEvent));
+  // let element = await Transaction.get(eventId(rewardEvent));
 
-  if (element !== undefined) {
-    // already processed reward previously
-    return;
-  }
+  // if (element !== undefined) {
+  //   // already processed reward previously
+  //   return;
+  // }
 
   let payoutCallsArgs = rewardEvent.block.block.extrinsics
     .map((extrinsic) =>
