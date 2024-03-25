@@ -39,22 +39,6 @@ const project: SubstrateProject = {
           },
           {
             kind: SubstrateHandlerKind.Event,
-            handler: "handleRewardedPolkadot",
-            filter: {
-              module: "staking",
-              method: "Rewarded",
-            },
-          },
-          {
-            kind: SubstrateHandlerKind.Event,
-            handler: "handleStakersElected",
-            filter: {
-              module: "staking",
-              method: "StakersElected",
-            },
-          },
-          {
-            kind: SubstrateHandlerKind.Event,
             handler: "handlePoolRewardPolkadot",
             filter: {
               module: "nominationPools",

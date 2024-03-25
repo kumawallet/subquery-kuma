@@ -8,23 +8,9 @@ import {
   handleNativeTransfer,
 } from "./mappings/EvmTransfer";
 import { EVM_CHAINS } from "./contants/evm-chains";
-import { Codec, INumber } from "@polkadot/types-codec/types";
-import { handlePoolReward } from "./mappings/PoolRewards";
 
 export const handleAssetTransferPolkadot = async (event: SubstrateEvent) => {
   handleAssetTransferred(event, SUBSTRATE_CHAINS["POLKADOT"].name);
-};
-
-export const handleRewardedPolkadot = async (
-  event: SubstrateEvent<[accountId: Codec, reward: INumber]>
-) => {
-  handleRewarded(event, SUBSTRATE_CHAINS["POLKADOT"].name);
-};
-
-export const handlePoolRewardPolkadot = async (
-  event: SubstrateEvent<[accountId: Codec, poolId: INumber, reward: INumber]>
-) => {
-  handlePoolReward(event, SUBSTRATE_CHAINS["POLKADOT"].name);
 };
 
 export const handleAssetTransferAstar = async (event: SubstrateEvent) => {
@@ -35,13 +21,13 @@ export const handleAssetTransferMoonbeam = async (event: SubstrateEvent) => {
   handleAssetTransferred(event, SUBSTRATE_CHAINS["MOONBEAM"].name);
 };
 
-export const handleParachainRewardMoonbeam = async (event: SubstrateEvent) => {
-  handleParachainRewarded(event as any, SUBSTRATE_CHAINS["MOONBEAM"].name);
-};
+// export const handleParachainRewardMoonbeam = async (event: SubstrateEvent) => {
+//   handleParachainRewarded(event as any, SUBSTRATE_CHAINS["MOONBEAM"].name);
+// };
 
-export const handleParachainRewardMoonriver = async (event: SubstrateEvent) => {
-  handleParachainRewarded(event as any, SUBSTRATE_CHAINS["MOONRIVER"].name);
-};
+// export const handleParachainRewardMoonriver = async (event: SubstrateEvent) => {
+//   handleParachainRewarded(event as any, SUBSTRATE_CHAINS["MOONRIVER"].name);
+// };
 
 export const handleNativeTransferEthereum = async (tx: EthereumTransaction) => {
   handleNativeTransfer(tx, EVM_CHAINS["ETHEREUM"].name);

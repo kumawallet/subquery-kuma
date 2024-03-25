@@ -59,14 +59,6 @@ const project: SubstrateProject = {
               method: "Transferred",
             },
           },
-          {
-            kind: SubstrateHandlerKind.Event,
-            handler: "handleParachainRewardMoonbeam",
-            filter: {
-              module: "parachainStaking",
-              method: "Rewarded",
-            },
-          },
         ],
       },
     },
