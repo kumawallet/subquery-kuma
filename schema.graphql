@@ -159,3 +159,10 @@ type Asset @entity {
   name: String!
   decimals: Int!
 }
+
+type Parachain @entity {
+  id: ID!
+  name: String!
+  base58prefix: Int
+  parachainId: Int! @index
+}

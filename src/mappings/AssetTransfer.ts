@@ -3,7 +3,13 @@ import {
   SubstrateExtrinsic,
   TypedEventRecord,
 } from "@subql/types";
-import { Asset, Status, Transaction, TransactionType } from "../types";
+import {
+  Asset,
+  Parachain,
+  Status,
+  Transaction,
+  TransactionType,
+} from "../types";
 import { SUBSTRATE_CHAINS } from "../contants/polkadot-chains";
 import {
   calculateFeeAsString,
@@ -11,7 +17,7 @@ import {
   isEvmTransaction,
   timestamp,
 } from "./common";
-import { ethereumEncode } from "@polkadot/util-crypto";
+import { ethereumEncode, encodeAddress } from "@polkadot/util-crypto";
 import { AnyTuple, Codec } from "@polkadot/types-codec/types";
 import {
   getModuleVersion,
@@ -19,6 +25,10 @@ import {
 } from "../utils/polkadot-utils";
 import { evmToAddress } from "@polkadot/util-crypto";
 import { parseBigumber } from "../utils/parse-amounts";
+import {
+  findParachainId,
+  getParachainsData,
+} from "../utils/get-parachains-info";
 
 export const handleAssetTransferred = async (
   event: SubstrateEvent,
@@ -35,17 +45,23 @@ export const handleAssetTransferred = async (
       asset,
       fee,
       hash,
-      recipient,
+      recipient: _recipient,
       sender,
       status,
-      targetNetwork,
+      targetNetwork: _targetNetwork,
       type,
     } = txInfo;
+
+    const { recipientAddress, targetNetwork } = await formatRecipientAddress({
+      recipient: _recipient,
+      relayChain: "polkadot",
+      targetNetwork: _targetNetwork,
+    });
 
     const tx = Transaction.create({
       id: hash,
       sender,
-      recipient,
+      recipient: recipientAddress,
       amount: amount || "0",
       asset,
       fee,
@@ -584,4 +600,67 @@ const parseBalanceWithAsset = async (
 
 const getEvmEvent = (event: SubstrateEvent, chainName: string) => {
   return isEvmExecutedEvent(event);
+};
+
+const formatRecipientAddress = async ({
+  recipient,
+  relayChain,
+  targetNetwork,
+}: {
+  targetNetwork: string;
+  recipient: string;
+  relayChain: string;
+}): Promise<{
+  recipientAddress: string;
+  targetNetwork: string;
+}> => {
+  try {
+    if (!targetNetwork.includes("parachain-"))
+      return {
+        recipientAddress: recipient,
+        targetNetwork,
+      };
+
+    const parachainId = targetNetwork.split("-")[1];
+
+    let parachainFound = (
+      await Parachain.getByParachainId(Number(parachainId)).catch(
+        (error) => null
+      )
+    )?.[0];
+
+    if (!parachainFound) {
+      const parachains = await getParachainsData(relayChain);
+
+      await Promise.all(
+        parachains.map((parachain) => {
+          const _parachainToSave = Parachain.create({
+            id: parachain.parachainId.toString(),
+            name: parachain.name,
+            parachainId: parachain.parachainId,
+            base58prefix: parachain.base58prefix,
+          });
+          return _parachainToSave.save();
+        })
+      );
+
+      parachainFound = findParachainId(Number(parachainId), parachains);
+    }
+
+    const _formatedAddress = encodeAddress(
+      recipient,
+      parachainFound.base58prefix
+    );
+    const _targetNetwork = parachainFound.name;
+
+    return {
+      recipientAddress: _formatedAddress,
+      targetNetwork: _targetNetwork,
+    };
+  } catch (error) {
+    return {
+      recipientAddress: recipient,
+      targetNetwork,
+    };
+  }
 };

@@ -37,5 +37,8 @@
   },
   "resolutions": {
     "ipfs-unixfs": "6.0.6"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0"
   }
 }

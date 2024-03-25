@@ -83,7 +83,6 @@ async function handlePoolRewardForTxHistory(
     type: TransactionType.RewardClaimed,
   });
 
-  // logger.info(`reward claimed ${tx.id}`);
   tx.save();
 }
 
