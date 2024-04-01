@@ -535,7 +535,7 @@ const transformAddressToWASM = (address: string, chain?: string) => {
 const handleXcmPalletTargetAddress = (extrinsic: AnyTuple) => {
   const [dest, beneficiary] = extrinsic;
 
-  const interiorModule = getModuleVersion(beneficiary.toJSON())?.interior?.x1;
+  const interiorModule = getModuleVersion(beneficiary?.toJSON())?.interior?.x1;
 
   if (interiorModule) {
     const account =
@@ -545,7 +545,7 @@ const handleXcmPalletTargetAddress = (extrinsic: AnyTuple) => {
 
     const accountId = account?.id || account?.key;
 
-    const destModule = getModuleVersion(dest.toJSON())?.interior?.x1;
+    const destModule = getModuleVersion(dest?.toJSON())?.interior?.x1;
     const parachainId = destModule?.["parachain"];
 
     if (!parachainId || !accountId)
