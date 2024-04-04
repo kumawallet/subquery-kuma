@@ -1,0 +1,37 @@
+# // Auto-generated , DO NOT EDIT
+specVersion: 1.0.0
+version: 0.0.1
+name: Polkadot
+description: Kuma Subquery Porject
+runner:
+  node:
+    name: '@subql/node'
+    version: '>=3.0.1'
+  query:
+    name: '@subql/query'
+    version: '*'
+schema:
+  file: ./schema.graphql
+network:
+  chainId: '0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3'
+  endpoint:
+    - wss://apps-rpc.polkadot.io
+    - wss://polkadot-rpc.dwellir.com
+    - wss://polkadot-rpc-tn.dwellir.com
+    - wss://rpc.ibp.network/polkadot
+    - wss://rpc.dotters.network/polkadot
+    - wss://1rpc.io/dot
+    - wss://rpc-polkadot.luckyfriday.io
+    - wss://polkadot.public.curie.radiumblock.co/ws
+    - wss://dot-rpc.stakeworld.io
+dataSources:
+  - kind: substrate/Runtime
+    startBlock: 1205128
+    mapping:
+      file: ./dist/index.js
+      handlers:
+        - kind: substrate/EventHandler
+          handler: handleAssetTransferPolkadot
+          filter:
+            module: balances
+            method: Transfer

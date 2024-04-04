@@ -1,0 +1,51 @@
+# // Auto-generated , DO NOT EDIT
+specVersion: 1.0.0
+version: 0.0.1
+name: Moonbeam
+description: Kuma Subquery Porject
+runner:
+  node:
+    name: '@subql/node'
+    version: '>=3.0.1'
+  query:
+    name: '@subql/query'
+    version: '*'
+schema:
+  file: ./schema.graphql
+network:
+  chainId: '0xfe58ea77779b7abda7da4ec526d14db9b1e9cd40a217c34892af80a9b332b76d'
+  endpoint:
+    - https://rpc.api.moonbeam.network
+    - https://moonbeam-rpc.dwellir.com
+    - https://moonbeam.api.onfinality.io/public
+dataSources:
+  - kind: substrate/Runtime
+    startBlock: 150000
+    mapping:
+      file: ./dist/index.js
+      handlers:
+        - kind: substrate/EventHandler
+          handler: handleAssetCreated
+          filter:
+            module: assets
+            method: MetadataSet
+        - kind: substrate/EventHandler
+          handler: handleAssetTransferMoonbeam
+          filter:
+            module: balances
+            method: Transfer
+        - kind: substrate/EventHandler
+          handler: handleAssetTransferMoonbeam
+          filter:
+            module: assets
+            method: Transferred
+        - kind: substrate/EventHandler
+          handler: handleAssetTransferMoonbeam
+          filter:
+            module: assets
+            method: Burned
+        - kind: substrate/EventHandler
+          handler: handleAssetTransferMoonbeam
+          filter:
+            module: localassets
+            method: Transferred

@@ -37,14 +37,14 @@ const project: SubstrateProject = {
               method: "Transfer",
             },
           },
-          {
-            kind: SubstrateHandlerKind.Event,
-            handler: "handlePoolRewardPolkadot",
-            filter: {
-              module: "nominationPools",
-              method: "PaidOut",
-            },
-          },
+          // {
+          //   kind: SubstrateHandlerKind.Event,
+          //   handler: "handlePoolRewardPolkadot",
+          //   filter: {
+          //     module: "nominationPools",
+          //     method: "PaidOut",
+          //   },
+          // },
         ],
       },
     },

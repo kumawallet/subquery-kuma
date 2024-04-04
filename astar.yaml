@@ -1,0 +1,47 @@
+# // Auto-generated , DO NOT EDIT
+specVersion: 1.0.0
+version: 0.0.1
+name: Astar
+description: Kuma Subquery Porject
+runner:
+  node:
+    name: '@subql/node'
+    version: '>=3.0.1'
+  query:
+    name: '@subql/query'
+    version: '*'
+schema:
+  file: ./schema.graphql
+network:
+  chainId: '0x9eb76c5184c4ab8679d2d5d819fdf90b9c001403e9e17da2e14b6d8aec4029c6'
+  endpoint:
+    - wss://astar-rpc.dwellir.com
+    - wss://1rpc.io/astr
+    - wss://rpc.astar.network
+    - wss://astar.public.curie.radiumblock.co/ws
+dataSources:
+  - kind: substrate/Runtime
+    startBlock: 4049256
+    mapping:
+      file: ./dist/index.js
+      handlers:
+        - kind: substrate/EventHandler
+          handler: handleAssetCreated
+          filter:
+            module: assets
+            method: MetadataSet
+        - kind: substrate/EventHandler
+          handler: handleAssetTransferAstar
+          filter:
+            module: balances
+            method: Transfer
+        - kind: substrate/EventHandler
+          handler: handleAssetTransferAstar
+          filter:
+            module: assets
+            method: Transferred
+        - kind: substrate/EventHandler
+          handler: handleAssetTransferAstar
+          filter:
+            module: assets
+            method: Burned
